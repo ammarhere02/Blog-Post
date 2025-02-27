@@ -5,7 +5,6 @@ import * as process from "node:process";
 import * as bcrypt from "bcrypt";
 import { signInDto } from "../Dto/auth-dto/signin.dto";
 import { signUpDto } from "../Dto/auth-dto/signup.dto";
-
 @Injectable()
 export class AuthService {
   constructor(
@@ -13,17 +12,24 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async signIn(signInDto: signInDto): Promise<{ accessToken: string }> {
+  async signIn(
+    signInDto: signInDto,
+    Role: string,
+  ): Promise<{ accessToken: string }> {
     const user = await this.userService.findOne(signInDto.username);
     console.log("user", user);
     if (!user) {
       throw new UnauthorizedException();
     }
-    const comp_pass = await bcrypt.compare(signInDto.password, user.password);
-    if (comp_pass) {
-      const secretKey = process.env.SECRET;
 
-      const payLoad = { username: signInDto.username };
+    const comp_pass = await bcrypt.compare(signInDto.password, user.password);
+    const comp_role = Role === user.Role;
+    if (comp_pass && comp_role) {
+      const secretKey = process.env.SECRET;
+      const payLoad = {
+        Role: user.Role,
+        username: signInDto.username,
+      };
       const accessToken = await this.jwtService.signAsync(payLoad, {
         secret: secretKey,
         expiresIn: "1h",
