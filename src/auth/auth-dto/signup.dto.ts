@@ -9,4 +9,6 @@ export class signUpDto {
   password: string;
   @IsOptional()
   phone?: number;
+  @IsOptional()
+  Role: string;
 }

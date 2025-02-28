@@ -8,7 +8,7 @@ import {
   Delete,
   Post,
 } from "@nestjs/common";
-import { createPost } from "../Dto/post-dto/create.post.dto";
+import { createPost } from "./post-dto/create.post.dto";
 
 @Controller("post")
 export class PostController {

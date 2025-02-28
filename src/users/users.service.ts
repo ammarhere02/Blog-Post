@@ -12,14 +12,6 @@ export class userService {
     return retrieving_users;
   }
 
-  async findOne(username: string) {
-    const userbyUsername = await this.prismaService.user.findUnique({
-      where: { username: username },
-    });
-    console.log(userbyUsername);
-    return userbyUsername;
-  }
-
   async postUser(username: string, email: string, password: string) {
     try {
       const postingUser = await this.prismaService.user.create({

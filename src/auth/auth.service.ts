@@ -3,44 +3,55 @@ import { userService } from "../users/users.service";
 import { JwtService } from "@nestjs/jwt";
 import * as process from "node:process";
 import * as bcrypt from "bcrypt";
-import { signInDto } from "../Dto/auth-dto/signin.dto";
-import { signUpDto } from "../Dto/auth-dto/signup.dto";
+import { signInDto } from "./auth-dto/signin.dto";
+import { signUpDto } from "./auth-dto/signup.dto";
+import { prismaService } from "../../prisma/db";
+
 @Injectable()
 export class AuthService {
   constructor(
     private userService: userService,
     private jwtService: JwtService,
+    private prisma: prismaService,
   ) {}
 
-  async signIn(
-    signInDto: signInDto,
-    Role: string,
-  ): Promise<{ accessToken: string }> {
-    const user = await this.userService.findOne(signInDto.username);
-    console.log("user", user);
+  async signIn(signInDto: signInDto): Promise<{ decodedToken: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { username: signInDto.username },
+      select: {
+        email: true,
+        Role: true,
+        password: true,
+      },
+    });
     if (!user) {
-      throw new UnauthorizedException();
+      console.log("User not found:", signInDto.username);
+      throw new UnauthorizedException("User not found");
     }
 
+    if (signInDto.role !== user.Role) {
+      throw new UnauthorizedException();
+    }
+    console.log("Roles matched");
     const comp_pass = await bcrypt.compare(signInDto.password, user.password);
-    const comp_role = Role === user.Role;
-    if (comp_pass && comp_role) {
+    console.log(user.password);
+    if (comp_pass) {
       const secretKey = process.env.SECRET;
       const payLoad = {
-        Role: user.Role,
+        role: signInDto.role,
         username: signInDto.username,
       };
       const accessToken = await this.jwtService.signAsync(payLoad, {
         secret: secretKey,
         expiresIn: "1h",
       });
-      console.log(accessToken);
-      return { accessToken };
+      console.log("Access Token", accessToken);
+      const decodedToken: string = await this.jwtService.decode(accessToken);
+      return { decodedToken };
     } else {
       throw new UnauthorizedException();
     }
   }
-
   async signUp(signUpDto: signUpDto) {
     const salt = await bcrypt.genSalt();
 
